@@ -7,7 +7,7 @@ A basic powershell script to read from CSV and retrieve serial numbers and call 
 - [x] Create a powershell script with optional arguments
   - [x] Create a process to find columns listing serial numbers
   - [x] Create a process to find columns listing manufacturers
-  - [] Get API addresses for common manufacturers
+  - [ ] Get API addresses for common manufacturers
     - [x] Lenovo
     - [ ] Dell
   - [x] For each device per manufacturer, request warranty status
