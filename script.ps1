@@ -69,17 +69,6 @@ function callLenovoWarrantyCheck {
 
         $WarrantyStart = $ResponseData.Data.baseWarranties[0].startDate
         $WarrantyEnd = $ResponseData.Data.baseWarranties[0].endDate
-        # $Product = $ResponseData.Data.machineInfo.product
-        # $Model = $ResponseData.Data.machineInfo.model
-        # $Brand = $ResponseData.Data.machineInfo.brand
-
-        Write-Host ""
-        Write-Host "Manufacturer: $makerValue"
-        Write-Host "Serial Number: $serialValue"
-
-        $WarrantyStart = $ResponseData.Data.baseWarranties[0].startDate
-        $WarrantyEnd = $ResponseData.Data.baseWarranties[0].endDate
-
         Write-Host ""
         Write-Host "Manufacturer: $makerValue"
         Write-Host "Serial Number: $serialValue"
