@@ -1,3 +1,4 @@
-"SerialNumber","Manufacturer","WarrantyStart","WarrantyEnd","Status"
-"R90MNVU1","Lenovo","2017-01-27","2020-01-26","Expired"
-"PG01GTB2","Lenovo","2019-01-30","2022-01-29","Expired"
+"SerialNumber","Manufacturer","WarrantyStart","Status"
+"R90MNVU1","Lenovo","2017-01-27","Expired"
+"PG01GTB2","Lenovo","2019-01-30","Expired"
+"0","Dell","",""

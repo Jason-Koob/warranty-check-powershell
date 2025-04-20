@@ -114,9 +114,9 @@ try {
             $result = [pscustomobject]@{
                 SerialNumber  = $serialValue
                 Manufacturer  = $makerValue
-                WarrantyStart = "Unsupported"
-                WarrantyEnd   = "Unsupported"
-                Status        = "Unsupported Manufacturer"
+                WarrantyStart = ""
+                WarrantyEnd   = ""
+                Status        = ""
             }
         }
 
