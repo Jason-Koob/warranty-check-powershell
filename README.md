@@ -12,4 +12,4 @@ A basic powershell script to read from CSV and retrieve serial numbers and call 
     - [ ] Dell
   - [x] For each device per manufacturer, request warranty status
   - [x] Parse responses from each response, while still implementing error checking and security
-  - [ ] Store the sanitized responses to a formatted csv
+  - [x] Store the sanitized responses to a formatted csv
