@@ -1,53 +1,52 @@
 # warranty-check-powershell script
-# Made by Jason-Koob on GitHub
+# Made by Jason/Koob
 
 param(
     [string]$source,
     [string]$maker,
     [string]$serial,
+    [string]$output = "warranty_results.csv",
     [switch]$h
 )
 
 if ($h) {
-    Write-Host "Usage: .\script.ps1 -source <path_to_csv> -maker <column_name_or_index> -serial <column_name_or_index>"
+    Write-Host "Usage: .\script.ps1 -source <path_to_csv> -maker <column_name> -serial <column_name> -output <output_csv>"
     Write-Host ""
     Write-Host "Parameters:"
-    Write-Host "  -source    Path to the CSV file containing the data."
-    Write-Host "  -maker     Column name or index for the maker/manufacturer."
-    Write-Host "  -serial    Column name or index for the serial number."
-    Write-Host "  -h         Display this help message."
+    Write-Host "  -source    Path to the input CSV file"
+    Write-Host "  -maker     Manufacturer column name"
+    Write-Host "  -serial    Serial number column name"
+    Write-Host "  -output    Output CSV path (default: warranty_results.csv)"
+    Write-Host "  -h         Display help"
     return
 }
 
-if (-not $source) {
-    Write-Host "Error: Please provide a source file path (Ex. -source 'configurations.csv')" -ForegroundColor Red
-    return
-}
-if (-not $maker) {
-    Write-Host "Error: Please provide a maker/manufacturer column index (Ex. -maker 3)" -ForegroundColor Red
-    return
-}
-if (-not $serial) {
-    Write-Host "Error: Please provide a serial column index (Ex. -serial 2)" -ForegroundColor Red
+if (-not $source -or -not $maker -or -not $serial) {
+    Write-Host "Error: Missing required parameters" -ForegroundColor Red
     return
 }
 
 if (-not (Test-Path $source)) {
-    Write-Host "Error: Source file not found." -ForegroundColor Red
+    Write-Host "Error: Source file not found" -ForegroundColor Red
     return
 }
+
 if ([System.IO.Path]::GetExtension($source) -ne ".csv") {
-    Write-Host "Error: Source file must be a CSV file." -ForegroundColor Red
+    Write-Host "Error: Source must be a CSV file" -ForegroundColor Red
     return
 }
+
+$Results = @()
+
 function callLenovoWarrantyCheck {
     param (
         [Parameter(Mandatory=1, Position=0)]
-        [String]$SerialNumber
+        [String]$SerialNumber,
+        [String]$Manufacturer
     )
 
     $data = @{
-        "serialNumber" = $SerialValue
+        "serialNumber" = $SerialNumber
         "machineType"  = ""
         "country"      = "us"
         "language"     = "en"
@@ -68,24 +67,25 @@ function callLenovoWarrantyCheck {
         $ResponseData = $Response.Content | ConvertFrom-Json
 
         $WarrantyStart = $ResponseData.Data.baseWarranties[0].startDate
-        $WarrantyEnd = $ResponseData.Data.baseWarranties[0].endDate
-        Write-Host ""
-        Write-Host "Manufacturer: $makerValue"
-        Write-Host "Serial Number: $serialValue"
-        Write-Host "Warranty Start: $WarrantyStart"
+        $WarrantyEnd   = $ResponseData.Data.baseWarranties[0].endDate
+        $Status = if ([datetime]::Parse($WarrantyEnd) -lt (Get-Date)) {"Expired"} else {"Active"}
 
-        if ([datetime]::Parse($WarrantyEnd) -lt (Get-Date)) {
-            Write-Host "Warranty End: $WarrantyEnd" -ForegroundColor Red
-        } else {
-            Write-Host "Warranty End: $WarrantyEnd" -ForegroundColor Green
+        return [pscustomobject]@{
+            SerialNumber  = $SerialNumber
+            Manufacturer  = $Manufacturer
+            WarrantyStart = $WarrantyStart
+            WarrantyEnd   = $WarrantyEnd
+            Status        = $Status
         }
-        # Write-Host "Product: $Product"
-        # Write-Host "Model: $Model"
-        # Write-Host "Type: $Brand"
-        Write-Host "----------------------------------------"
 
     } catch {
-        Write-Host "Error: Unable to retrieve warranty information for serial number $Serialvalue." -ForegroundColor Red
+        return [pscustomobject]@{
+            SerialNumber  = $SerialNumber
+            Manufacturer  = $Manufacturer
+            WarrantyStart = "N/A"
+            WarrantyEnd   = "N/A"
+            Status        = "Error"
+        }
     }
 }
 
@@ -93,15 +93,15 @@ try {
     $csvContent = Import-Csv -Path $source
 
     foreach ($row in $csvContent) {
-        $serialValue = $row.serial
-        $makerValue = $row.manufacturer
+        $serialValue = $row.$serial
+        $makerValue = $row.$maker
 
         if (-not $serialValue) {
-            Write-Host "Error: Serial value is missing in one of the rows." -ForegroundColor Red
+            Write-Host "Error: Missing serial in row" -ForegroundColor Yellow
             continue
         }
         if (-not $makerValue) {
-            Write-Host "Error: Manufacturer value is missing in one of the rows." -ForegroundColor Red
+            Write-Host "Error: Missing manufacturer in row" -ForegroundColor Yellow
             continue
         }
 
@@ -109,13 +109,28 @@ try {
         $serialValue = $serialValue.ToUpper()
 
         if ($makerValue -eq "Lenovo") {
-            callLenovoWarrantyCheck -SerialNumber $serialValue
+            $result = callLenovoWarrantyCheck -SerialNumber $serialValue -Manufacturer $makerValue
+        } else {
+            $result = [pscustomobject]@{
+                SerialNumber  = $serialValue
+                Manufacturer  = $makerValue
+                WarrantyStart = "Unsupported"
+                WarrantyEnd   = "Unsupported"
+                Status        = "Unsupported Manufacturer"
+            }
         }
-        
-    }
-} catch {
-    Write-Host "Error: Unable to process the CSV file. Ensure it has the correct format." -ForegroundColor Red
-    Write-Host "Exception: $($_.Exception.Message)" -ForegroundColor Red
-    return
-}
 
+        $Results += $result
+        Write-Host "Processed $serialValue ($makerValue) - Status: $($result.Status)"
+    }
+
+    # Export with columns in the specified order
+    $Results | Select-Object SerialNumber,Manufacturer,WarrantyStart,WarrantyEnd,Status |
+        Export-Csv -Path $output -NoTypeInformation
+
+    Write-Host "`nResults exported to $output" -ForegroundColor Green
+
+} catch {
+    Write-Host "Error: $_" -ForegroundColor Red
+    exit 1
+}
