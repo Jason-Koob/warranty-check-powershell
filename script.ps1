@@ -82,9 +82,9 @@ function callLenovoWarrantyCheck {
         return [pscustomobject]@{
             SerialNumber  = $SerialNumber
             Manufacturer  = $Manufacturer
-            WarrantyStart = "N/A"
-            WarrantyEnd   = "N/A"
-            Status        = "Error"
+            WarrantyStart = ""
+            WarrantyEnd   = ""
+            Status        = ""
         }
     }
 }
